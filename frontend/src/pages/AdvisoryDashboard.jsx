@@ -85,9 +85,26 @@ export default function AdvisoryDashboard() {
         }))
         : [];
 
+    // risk score 
+    let riskScore = 0;
+
+    // temperature impact
+    if (weatherData.temperature > 38) riskScore += 35;
+    else if (weatherData.temperature > 32) riskScore += 20;
+
+    // humidity impact
+    if (weatherData.humidity > 85) riskScore += 30;
+    if (weatherData.humidity > 70) riskScore += 15;
+
+    //cloud impact 
+    if (weatherData.cloud > 80) riskScore += 35;
+    if (weatherData.cloud > 60) riskScore += 20;
 
     // Risk Logic
     let riskLevel = "Low";
+
+    if (riskScore >= 70) riskLevel = "High";
+    else if (riskScore >= 40) riskLevel = "Medium";
 
     if (weatherData.temperature > 38 || weatherData.cloud > 70) {
         riskLevel = "High";
@@ -95,18 +112,56 @@ export default function AdvisoryDashboard() {
         riskLevel = "Medium";
     }
 
-    // Advisory Logic
-    let advisory =
-        "Weather conditions are stable. Continue normal farming practices.";
+    let advisory = "";
+    let prediction = "";
 
+    // HIGH RISK
     if (riskLevel === "High") {
-        advisory =
-            "High weather risk detected. Avoid irrigation and monitor crop health carefully.";
+
+        if (crop === "Rice") {
+            advisory = "High moisture and cloud cover detected. Monitor for fungal diseases and ensure field drainage.";
+            prediction = "High chance of crop disease in next 24 hours.";
+        }
+
+        else if (crop === "Wheat") {
+            advisory = "High temperature stress possible. Increase irrigation and monitor leaf dryness.";
+            prediction = "Yield stress risk in next 24 hours.";
+        }
+
+        else if (crop === "Maize") {
+            advisory = "High weather instability detected. Protect young plants from excess moisture.";
+            prediction = "Growth instability possible tomorrow.";
+        }
+
+        else {
+            advisory = "Severe weather risk detected. Monitor crop conditions closely.";
+            prediction = "Weather may impact crop health in next 24 hours.";
+        }
     }
 
-    if (riskLevel === "Medium") {
-        advisory =
-            "Moderate weather changes expected. Monitor soil moisture and crop condition.";
+    // MEDIUM RISK
+    else if (riskLevel === "Medium") {
+
+        if (crop === "Rice") {
+            advisory = "Moderate humidity detected. Maintain proper water level and monitor pests.";
+            prediction = "Moderate fungal risk tomorrow.";
+        }
+
+        else if (crop === "Wheat") {
+            advisory = "Moderate temperature rise expected. Maintain irrigation schedule.";
+            prediction = "Mild crop stress possible tomorrow.";
+        }
+
+        else {
+            advisory = "Moderate weather changes expected. Monitor crop condition.";
+            prediction = "Minor weather impact expected.";
+        }
+    }
+
+    // LOW RISK
+    else {
+        advisory = "Weather conditions are stable. Continue normal farming practices.";
+        prediction = "Stable crop conditions expected tomorrow.";
     }
 
     const riskColor =
