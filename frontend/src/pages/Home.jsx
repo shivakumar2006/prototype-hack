@@ -12,7 +12,10 @@ export default function Home() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        navigate("/dashboard", { state: { location, crop } });
+
+        navigate("/dashboard", {
+            state: { location, crop },
+        });
     };
 
     return (
