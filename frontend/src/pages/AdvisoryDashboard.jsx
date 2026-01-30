@@ -64,19 +64,27 @@ export default function AdvisoryDashboard() {
     // Forecast → Temperature Chart Data
     const tempChartData = forecastData
         ? forecastData.list.slice(0, 5).map((item) => ({
-            time: item.dt_txt.split(" ")[1].slice(0, 5),
+            time: new Date(item.dt_txt).toLocaleString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+            }),
             temp: Math.round(item.main.temp),
         }))
         : [];
 
+
     // Forecast → Humidity + Cloud Bar Chart
     const humidityCloudChartData = forecastData
         ? forecastData.list.slice(0, 5).map((item) => ({
-            time: item.dt_txt.split(" ")[1].slice(0, 5),
+            time: new Date(item.dt_txt).toLocaleString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+            }),
             humidity: item.main.humidity,
             cloud: item.clouds.all,
         }))
         : [];
+
 
     // Risk Logic
     let riskLevel = "Low";
