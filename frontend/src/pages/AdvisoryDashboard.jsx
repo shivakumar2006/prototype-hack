@@ -10,47 +10,84 @@ import {
 } from "lucide-react";
 
 import { useLocation } from "react-router-dom";
-// import { useGetCurrentWeatherQuery } from "../services/weatherApi";
-import { useGetCurrentWeatherQuery } from "../redux/api/weatherApi";
+import { useGetCurrentWeatherQuery, useGetForecastQuery } from "../redux/api/weatherApi";
+
+// Recharts
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip,
+    CartesianGrid,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    Legend,
+} from "recharts";
 
 export default function AdvisoryDashboard() {
-
-    // Get data from Home page
     const routerLocation = useLocation();
 
     const city = routerLocation.state?.location || "Ghaziabad";
     const crop = routerLocation.state?.crop || "Wheat";
 
-    // 🔥 RTK Query Call
+    // Weather API Calls
     const { data, isLoading, error } = useGetCurrentWeatherQuery(city);
+    const { data: forecastData } = useGetForecastQuery(city);
 
     if (isLoading) {
-        return <h1 className="text-center mt-20 text-xl">Loading Weather Data...</h1>;
+        return (
+            <h1 className="text-center mt-20 text-xl">
+                Loading Weather Data...
+            </h1>
+        );
     }
 
     if (error) {
-        return <h1 className="text-center mt-20 text-xl text-red-500">Error fetching weather</h1>;
+        return (
+            <h1 className="text-center mt-20 text-xl text-red-500">
+                Error fetching weather
+            </h1>
+        );
     }
 
-    // ✅ Map API Data
+    // Map Current Weather
     const weatherData = {
         location: city,
         crop: crop,
         temperature: Math.round(data.main.temp),
         humidity: data.main.humidity,
-        rainChance: data.clouds.all || 0,
+        cloud: data.clouds.all || 0,
     };
 
-    // ⭐ Simple Risk Logic (You Can Upgrade Later)
+    // Forecast → Temperature Chart Data
+    const tempChartData = forecastData
+        ? forecastData.list.slice(0, 5).map((item) => ({
+            time: item.dt_txt.split(" ")[1].slice(0, 5),
+            temp: Math.round(item.main.temp),
+        }))
+        : [];
+
+    // Forecast → Humidity + Cloud Bar Chart
+    const humidityCloudChartData = forecastData
+        ? forecastData.list.slice(0, 5).map((item) => ({
+            time: item.dt_txt.split(" ")[1].slice(0, 5),
+            humidity: item.main.humidity,
+            cloud: item.clouds.all,
+        }))
+        : [];
+
+    // Risk Logic
     let riskLevel = "Low";
 
-    if (weatherData.temperature > 38 || weatherData.rainChance > 70) {
+    if (weatherData.temperature > 38 || weatherData.cloud > 70) {
         riskLevel = "High";
-    } else if (weatherData.temperature > 32 || weatherData.rainChance > 50) {
+    } else if (weatherData.temperature > 32 || weatherData.cloud > 50) {
         riskLevel = "Medium";
     }
 
-    // ⭐ Advisory Logic
+    // Advisory Logic
     let advisory =
         "Weather conditions are stable. Continue normal farming practices.";
 
@@ -79,9 +116,7 @@ export default function AdvisoryDashboard() {
 
     return (
         <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-emerald-100 via-white to-green-100 p-6">
-
             <div className="max-w-7xl mx-auto relative">
-
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -100,8 +135,6 @@ export default function AdvisoryDashboard() {
 
                 {/* Stats Grid */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-7">
-
-                    {/* Temperature */}
                     <motion.div {...cardAnimation} className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl p-7">
                         <div className="flex items-center justify-between mb-4">
                             <ThermometerSun className="text-orange-500" />
@@ -112,7 +145,6 @@ export default function AdvisoryDashboard() {
                         </h2>
                     </motion.div>
 
-                    {/* Humidity */}
                     <motion.div {...cardAnimation} className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl p-7">
                         <div className="flex items-center justify-between mb-4">
                             <Droplets className="text-blue-500" />
@@ -123,18 +155,16 @@ export default function AdvisoryDashboard() {
                         </h2>
                     </motion.div>
 
-                    {/* Rain */}
                     <motion.div {...cardAnimation} className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl p-7">
                         <div className="flex items-center justify-between mb-4">
                             <CloudRain className="text-indigo-500" />
                             <span className="text-sm text-gray-400">Cloud %</span>
                         </div>
                         <h2 className="text-3xl font-bold text-gray-800">
-                            {weatherData.rainChance}%
+                            {weatherData.cloud}%
                         </h2>
                     </motion.div>
 
-                    {/* Risk */}
                     <motion.div {...cardAnimation} className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl p-7">
                         <div className="flex items-center justify-between mb-4">
                             <AlertTriangle className="text-red-500" />
@@ -146,7 +176,57 @@ export default function AdvisoryDashboard() {
                     </motion.div>
                 </div>
 
-                {/* Advisory Section */}
+                {/* Charts Section */}
+                <div className="grid lg:grid-cols-2 gap-7 mt-10">
+
+                    {/* Temperature Line Chart */}
+                    <motion.div {...cardAnimation} className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl p-8">
+                        <div className="flex items-center gap-2 mb-5">
+                            <BarChart3 className="text-green-600" />
+                            <h3 className="text-xl font-semibold text-gray-800">
+                                Temperature Forecast Trend
+                            </h3>
+                        </div>
+
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={tempChartData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="time" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="temp" stroke="#16a34a" strokeWidth={3} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </motion.div>
+
+                    {/* Humidity + Cloud Bar Chart */}
+                    <motion.div {...cardAnimation} className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl p-8">
+                        <div className="flex items-center gap-2 mb-5">
+                            <BarChart3 className="text-blue-600" />
+                            <h3 className="text-xl font-semibold text-gray-800">
+                                Humidity & Cloud Forecast
+                            </h3>
+                        </div>
+
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={humidityCloudChartData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="time" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="humidity" fill="#3b82f6" />
+                                    <Bar dataKey="cloud" fill="#6366f1" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* Advisory */}
                 <div className="mt-10">
                     <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl p-8">
                         <h3 className="text-xl font-semibold text-gray-800 mb-5">
@@ -157,7 +237,6 @@ export default function AdvisoryDashboard() {
                         </p>
                     </div>
                 </div>
-
             </div>
         </div>
     );
